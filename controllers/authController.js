@@ -5,6 +5,7 @@ const User = require("../models/User");
 
 const sendRes = require("../utils/sendRes");
 const transporter = require("../utils/sendMail");
+const logMail = require("../utils/logMail");
 /* 
 All the functions here are async because they perform asynchronous 
 operations. Actions that don’t complete immediately 
@@ -144,7 +145,7 @@ exports.logout = async (req, res) => {
 
 exports.sendVerificationOTP = async (req, res) => {
   try {
-    const { userId } = req.body; // userId is set in authMiddleware requireAuth function
+    const { userId } = req.body;
     const user = await User.findById(userId);
 
     if (user.isVerified) {
@@ -154,19 +155,40 @@ exports.sendVerificationOTP = async (req, res) => {
     const OTP = String(Math.floor(Math.random() * 1000000)).padStart(6, "0");
     user.verificationOTP = OTP;
     user.verificationOTPExpires = Date.now() + 1000 * 60 * 60 * 4; // 4 hours
-
     await user.save();
 
     const mailOptions = {
-      from: process.env.SENDER_EMAIL,
+      from: `"Lofi Learn" <${process.env.SENDER_EMAIL}>`,
       to: user.email,
       subject: "Verify Your Email",
       text: `Your verification code is ${OTP}. It will expire in 4 hours.`,
     };
 
-    await transporter.sendMail(mailOptions);
+    try {
+      await transporter.sendMail(mailOptions);
 
-    return sendRes(res, 200, true, "Verification code sent to email");
+      await logMail({
+        userId: user._id,
+        email: user.email,
+        type: "EMAIL_VERIFICATION_OTP",
+        status: "SENT",
+        subject: mailOptions.subject,
+        text: mailOptions.text,
+      });
+
+      return sendRes(res, 200, true, "Verification code sent to email");
+    } catch (emailError) {
+      await logMail({
+        userId: user._id,
+        email: user.email,
+        type: "EMAIL_VERIFICATION_OTP",
+        status: "FAILED",
+        subject: mailOptions.subject,
+        text: emailError.message,
+      });
+
+      return sendRes(res, 500, false, "Failed to send email. Try again.");
+    }
   } catch (error) {
     return sendRes(res, 500, false, error.message);
   }

@@ -9,8 +9,7 @@ const suggestionRoutes = require("./routes/suggestionRoutes");
 
 const { limiter } = require("./middleware/rateLimitMiddleware");
 
-require("./cronjobs/verifiedUserCount");
-require("./cronjobs/lastLoginClean");
+require("./cronjobs/warnAndDeleteUser");
 
 const PORT = process.env.PORT;
 
