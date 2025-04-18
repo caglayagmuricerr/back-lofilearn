@@ -109,8 +109,6 @@ exports.login = async (req, res) => {
     }
     user.lastLogin = Date.now();
     await user.save();
-    console.log(user.lastLogin);
-    console.log(user.updatedAt);
 
     const token = jwt.sign(
       { _id: user._id, role: user.role, isVerified: user.isVerified },
@@ -145,7 +143,7 @@ exports.logout = async (req, res) => {
 
 exports.sendVerificationOTP = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = req.user._id;
     const user = await User.findById(userId);
 
     if (user.isVerified) {
@@ -195,7 +193,8 @@ exports.sendVerificationOTP = async (req, res) => {
 };
 
 exports.verifyEmail = async (req, res) => {
-  const { userId, otp } = req.body; // userId is set in authMiddleware requireAuth function
+  const { otp } = req.body;
+  const userId = req.user._id;
 
   if (!userId || !otp) {
     return sendRes(res, 400, false, "Missing credentials");
@@ -231,14 +230,12 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
-//placeholder for change password function
-
 exports.changePassword = async (req, res) => {
   const { _id, isVerified } = req.user;
   const { oldPassword, newPassword } = req.body;
 
   try {
-    const user = await User.findById(_id);
+    const user = await User.findById(_id).select("+password");
 
     if (!user) {
       return sendRes(res, 404, false, "User not found");
@@ -248,17 +245,14 @@ exports.changePassword = async (req, res) => {
       return sendRes(res, 403, false, "User is not verified");
     }
 
-    // Check if old password is correct
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
       return sendRes(res, 400, false, "Old password is incorrect");
     }
 
-    // Hash new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    // Save the new password
     user.password = hashedPassword;
     await user.save();
 

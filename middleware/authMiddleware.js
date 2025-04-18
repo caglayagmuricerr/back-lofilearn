@@ -15,9 +15,9 @@ const requireAuth = async (req, res, next) => {
 
   try {
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-
+    console.log(decodedToken);
     if (decodedToken._id) {
-      req.body.userId = decodedToken._id; // setting userId in req.body
+      req.user = decodedToken; // named req.user to be more descriptive
     } else {
       return sendRes(
         res,
