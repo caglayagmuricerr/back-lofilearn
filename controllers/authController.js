@@ -6,6 +6,7 @@ const User = require("../models/User");
 const sendRes = require("../utils/sendRes");
 const transporter = require("../utils/sendMail");
 const logMail = require("../utils/logMail");
+const generateOTP = require("../utils/otp");
 /* 
 All the functions here are async because they perform asynchronous 
 operations. Actions that don’t complete immediately 
@@ -130,6 +131,13 @@ exports.login = async (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
+    const userId = req.user._id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return sendRes(res, 404, false, "User not found");
+    }
+
     res.clearCookie("Authorization", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -150,7 +158,7 @@ exports.sendVerificationOTP = async (req, res) => {
       return sendRes(res, 400, false, "Account already verified");
     }
 
-    const OTP = String(Math.floor(Math.random() * 1000000)).padStart(6, "0");
+    const OTP = generateOTP();
     user.verificationOTP = OTP;
     user.verificationOTPExpires = Date.now() + 1000 * 60 * 60 * 4; // 4 hours
     await user.save();
@@ -259,5 +267,80 @@ exports.changePassword = async (req, res) => {
     return sendRes(res, 200, true, "Password changed successfully");
   } catch (error) {
     return sendRes(res, 500, false, error.message);
+  }
+};
+
+exports.sendResetPasswordOTP = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    const OTP = generateOTP();
+    user.resetPasswordOTP = OTP;
+    user.resetPasswordOTPExpires = Date.now() + 1000 * 60 * 15; // 15 minutes
+    await user.save();
+
+    const mailOptions = {
+      from: `"Lofi Learn" <${process.env.SENDER_EMAIL}>`,
+      to: user.email,
+      subject: "Reset your password",
+      html: `<p>Your OTP to reset your password is: <strong>${OTP}</strong></p>
+             <p>This OTP will expire in 15 minutes.</p>`,
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+
+      await logMail({
+        userId: user._id,
+        email: user.email,
+        type: "PASSWORD_RESET_OTP",
+        status: "SENT",
+        subject: mailOptions.subject,
+        text: mailOptions.text,
+      });
+
+      return sendRes(res, 200, true, "Reset Password OTP sent to email");
+    } catch (emailError) {
+      await logMail({
+        userId: user._id,
+        email: user.email,
+        type: "PASSWORD_RESET_OTP",
+        status: "FAILED",
+        subject: mailOptions.subject,
+        text: emailError.message,
+      });
+
+      return sendRes(res, 500, false, "Failed to send email. Try again.");
+    }
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user || user.resetPasswordOTP !== otp) {
+      return res.status(400).json({ message: "Invalid OTP or email." });
+    }
+
+    if (user.resetPasswordOTPExpires < Date.now()) {
+      return res.status(400).json({ message: "OTP expired." });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetPasswordOTP = undefined;
+    user.resetPasswordOTPExpires = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successfully." });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };

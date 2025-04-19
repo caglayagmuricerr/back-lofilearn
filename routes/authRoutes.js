@@ -30,4 +30,16 @@ router.patch(
   authController.changePassword
 ); // api/auth/change-password
 
+router.post(
+  // api/auth/send-reset-password-otp
+  "/send-reset-password-otp",
+  authController.sendResetPasswordOTP
+);
+
+router.post(
+  // api/auth/reset-password
+  "/reset-password",
+  authController.resetPassword
+);
+
 module.exports = router;
