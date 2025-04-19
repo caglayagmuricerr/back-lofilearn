@@ -15,7 +15,7 @@ const requireAuth = async (req, res, next) => {
 
   try {
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decodedToken);
+
     if (decodedToken._id) {
       req.user = decodedToken; // named req.user to be more descriptive
     } else {
@@ -32,20 +32,4 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
-const requireRole = (roles) => (req, res, next) => {
-  try {
-    const token = req.headers.authorization.split(" ")[1];
-    if (!token) return sendRes(res, 401, false, "Unauthorized");
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-
-    if (!roles.includes(req.user.role)) {
-      return sendRes(res, 403, false, "Forbidden");
-    }
-    next();
-  } catch (error) {
-    return sendRes(res, 401, false, "Invalid token");
-  }
-};
-module.exports = { requireAuth, requireRole };
+module.exports = { requireAuth };
