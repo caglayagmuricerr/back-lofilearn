@@ -2,7 +2,10 @@ const jwt = require("jsonwebtoken");
 const sendRes = require("../utils/sendRes");
 
 const requireAuth = async (req, res, next) => {
-  const token = req.cookies.Authorization?.split(" ")[1];
+  // i might use cookie or header
+  const tokenFromCookie = req.cookies.Authorization?.split(" ")[1];
+  const tokenFromHeader = req.headers.authorization?.split(" ")[1];
+  const token = tokenFromCookie || tokenFromHeader;
 
   if (!token) {
     return sendRes(

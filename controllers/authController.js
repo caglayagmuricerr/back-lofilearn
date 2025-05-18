@@ -7,11 +7,18 @@ const sendRes = require("../utils/sendRes");
 const transporter = require("../utils/sendMail");
 const logMail = require("../utils/logMail");
 const generateOTP = require("../utils/otp");
+
 /* 
-All the functions here are async because they perform asynchronous 
-operations. Actions that don’t complete immediately 
-and involve waiting (like reading/writing from a database, 
-sending an email, or hashing a password).
+  Authentication controller for handling user registration, login, logout, email verification, password reset, and password change.
+
+  - register: Registers a new user and sends a verification email.
+  - login: Authenticates a user and generates a JWT token.
+  - logout: Logs out a user by clearing the JWT token from cookies.
+  - sendVerificationOTP: Sends a verification OTP to the user's email.
+  - verifyEmail: Verifies the user's email using the OTP.
+  - changePassword: Changes the user's password after verifying the old password. Requires the user to be logged in.
+  - sendResetPasswordOTP: Sends a password reset OTP to the user's email. No need to be logged in.
+  - resetPassword: Resets the user's password using the OTP.
 */
 
 exports.register = async (req, res) => {
@@ -65,12 +72,17 @@ exports.register = async (req, res) => {
       res,
       201,
       true,
-      "Registration successful. Please verify your email."
+      "Registration successful. Please verify your email.",
+      { role: user.role }
     );
+
+    console.log("Role sent in response:", user.role);
   } catch (error) {
-    if (error.code === 11000) {
+    if (error.cause.code === 11000) {
       // mongoose duplicate key error
-      const field = Object.keys(error.keyPattern)[0];
+      // console.log("ERROR OBJECT:", error);
+      // console.log("ERROR CODE:", error.code); // returns undefined... adding cause to all errors fixed this
+      const field = Object.keys(error.cause.keyPattern)[0];
       return sendRes(res, 400, false, `This ${field} is already in use.`);
     }
     return sendRes(res, 500, false, error.message);
@@ -97,7 +109,7 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email }).select("+password");
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return sendRes(res, 401, false, "Invalid credentials"); // Unauthorized
+      return sendRes(res, 401, false, "Invalid credentials"); // unauthorized
     }
 
     if (!user.isVerified) {
@@ -154,9 +166,17 @@ exports.sendVerificationOTP = async (req, res) => {
     const userId = req.user._id;
     const user = await User.findById(userId);
 
+    if (!user) {
+      return sendRes(res, 404, false, "User not found");
+    }
+
     if (user.isVerified) {
       return sendRes(res, 400, false, "Account already verified");
     }
+
+    /*  TODO: i should add a message to register that says if your not getting any emails 
+          make sure your email is correct
+    */
 
     const OTP = generateOTP();
     user.verificationOTP = OTP;
@@ -238,19 +258,44 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
+// NOTE: IM NOT SURE IF THIS KIND OF PASSWORD CHANGE IS SECURE
+
 exports.changePassword = async (req, res) => {
   const { _id, isVerified } = req.user;
   const { oldPassword, newPassword } = req.body;
 
   try {
     const user = await User.findById(_id).select("+password");
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
 
     if (!user) {
       return sendRes(res, 404, false, "User not found");
     }
 
+    if (!oldPassword || !newPassword) {
+      return sendRes(res, 400, false, "Missing credentials");
+    }
+
     if (!isVerified) {
       return sendRes(res, 403, false, "User is not verified");
+    }
+
+    if (oldPassword === newPassword) {
+      return sendRes(
+        res,
+        400,
+        false,
+        "New password cannot be the same as old password"
+      );
+    }
+
+    if (!passwordRegex.test(newPassword)) {
+      return sendRes(
+        res,
+        400,
+        false,
+        "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number"
+      );
     }
 
     const isMatch = await bcrypt.compare(oldPassword, user.password);
@@ -276,7 +321,7 @@ exports.sendResetPasswordOTP = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found." });
-
+    // NOTE: Why did I not use sendRes here? LMAO
     const OTP = generateOTP();
     user.resetPasswordOTP = OTP;
     user.resetPasswordOTPExpires = Date.now() + 1000 * 60 * 15; // 15 minutes
@@ -317,20 +362,33 @@ exports.sendResetPasswordOTP = async (req, res) => {
     }
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
+    // NOTE: Why did I not use sendRes here? LMAO
   }
 };
 
 exports.resetPassword = async (req, res) => {
   const { email, otp, newPassword } = req.body;
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
 
   try {
     const user = await User.findOne({ email });
     if (!user || user.resetPasswordOTP !== otp) {
       return res.status(400).json({ message: "Invalid OTP or email." });
+      // NOTE: Why did I not use sendRes here? LMAO
+    }
+
+    if (!passwordRegex.test(newPassword)) {
+      return sendRes(
+        res,
+        400,
+        false,
+        "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number"
+      );
     }
 
     if (user.resetPasswordOTPExpires < Date.now()) {
       return res.status(400).json({ message: "OTP expired." });
+      // NOTE: Why did I not use sendRes here? LMAO
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -340,7 +398,9 @@ exports.resetPassword = async (req, res) => {
     await user.save();
 
     res.status(200).json({ message: "Password reset successfully." });
+    // NOTE: Why did I not use sendRes here? LMAO
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
+    // NOTE: Why did I not use sendRes here? LMAO
   }
 };
