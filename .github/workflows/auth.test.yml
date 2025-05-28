@@ -12,18 +12,6 @@ jobs:
   test:
     runs-on: ubuntu-22.04
 
-    env:
-      NODE_ENV: test
-      MONGODB_URI: ${{ secrets.MONGODB_URI }}
-      PORT: ${{ secrets.PORT }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      SMTP_HOST: ${{ secrets.SMTP_HOST }}
-      SMTP_USER: ${{ secrets.SMTP_USER }}
-      SMTP_PASS: ${{ secrets.SMTP_PASS }}
-      SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-      FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -33,6 +21,19 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Create .env.test file
+        run: |
+          echo "NODE_ENV=test" >> .env.test
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env.test
+          echo "PORT=5000" >> .env.test
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env.test
+          echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env.test
+          echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> .env.test
+          echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" >> .env.test
+          echo "SMTP_PORT=587" >> .env.test
+          echo "SENDER_EMAIL=${{ secrets.SENDER_EMAIL }}" >> .env.test
+          echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env.test
 
       - name: Run Auth Tests
         run: npm run test:auth
