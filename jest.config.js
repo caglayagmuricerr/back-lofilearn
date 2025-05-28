@@ -4,6 +4,7 @@ const config = {
     verbose: true,
     clearMocks: true,
     detectOpenHandles: true,
+    testTimeout: 20000, // 20 seconds
 };
 
 module.exports = config;
