@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const fs = require("fs");
+const path = require("path");
 
 const User = require("../models/User");
 
@@ -162,6 +164,9 @@ exports.logout = async (req, res) => {
 };
 
 exports.sendVerificationOTP = async (req, res) => {
+  const templatePath = path.join(__dirname, "../templates/verification_template.html");
+  let htmlTemplate = fs.readFileSync(templatePath, "utf8");
+
   try {
     const userId = req.user._id;
     const user = await User.findById(userId);
@@ -180,14 +185,17 @@ exports.sendVerificationOTP = async (req, res) => {
 
     const OTP = generateOTP();
     user.verificationOTP = OTP;
-    user.verificationOTPExpires = Date.now() + 1000 * 60 * 60 * 4; // 4 hours
+    user.verificationOTPExpires = Date.now() + 1000 * 60 * 60 * 1; // 1 hour
     await user.save();
+
+    htmlTemplate = htmlTemplate.replace("{{NAME}}", user.name);
+    htmlTemplate = htmlTemplate.replace("{{OTP}}", OTP);
 
     const mailOptions = {
       from: `"Lofi Learn" <${process.env.SENDER_EMAIL}>`,
       to: user.email,
       subject: "Verify Your Email",
-      text: `Your verification code is ${OTP}. It will expire in 4 hours.`,
+      html: htmlTemplate,
     };
 
     try {
@@ -199,7 +207,7 @@ exports.sendVerificationOTP = async (req, res) => {
         type: "EMAIL_VERIFICATION_OTP",
         status: "SENT",
         subject: mailOptions.subject,
-        text: mailOptions.text,
+        html: mailOptions.html,
       });
 
       return sendRes(res, 200, true, "Verification code sent to email");
@@ -210,7 +218,7 @@ exports.sendVerificationOTP = async (req, res) => {
         type: "EMAIL_VERIFICATION_OTP",
         status: "FAILED",
         subject: mailOptions.subject,
-        text: emailError.message,
+        error: emailError.message,
       });
 
       return sendRes(res, 500, false, "Failed to send email. Try again.");
@@ -344,7 +352,7 @@ exports.sendResetPasswordOTP = async (req, res) => {
         type: "PASSWORD_RESET_OTP",
         status: "SENT",
         subject: mailOptions.subject,
-        text: mailOptions.text,
+        html: mailOptions.text,
       });
 
       return sendRes(res, 200, true, "Reset Password OTP sent to email");
@@ -355,7 +363,7 @@ exports.sendResetPasswordOTP = async (req, res) => {
         type: "PASSWORD_RESET_OTP",
         status: "FAILED",
         subject: mailOptions.subject,
-        text: emailError.message,
+        error: emailError.message,
       });
 
       return sendRes(res, 500, false, "Failed to send email. Try again.");

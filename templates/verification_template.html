@@ -1,57 +1,50 @@
+<!--
+  What I've learned about making email templates:
+  - Use tables for layout instead of divs for better compatibility with email clients.
+  - Use inline CSS for styling as many email clients strip out <style> tags.
+  - Avoid using background images as they may not display in all email clients.
+  - Use absolute URLs for images and links to ensure they work when the email is opened.
+  - Ensure the email is mobile-friendly by using a responsive design.
+  - Use a consistent color scheme that matches your brand.
+  - Avoid using too many images or large files to prevent the email from being marked as spam.
+-->
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OTP Email Template</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-    />
+    <meta charset="UTF-8">
+    <title>Verify Your Email</title>
   </head>
-
-  <body class="bg-gray-100 p-0 m-0 font-sans">
-    <div class="max-w-[600px] mx-auto my-8 bg-white rounded-lg shadow-md p-5">
-      <div class="text-center">
-        <div><i class="fas fa-lock text-gray-800 text-7xl"></i></div>
-        <div class="bg-blue-800/90 p-8 rounded text-white text-xl my-5">
-          <div class="text-3xl font-extrabold my-2">--- Lofi Learn ---</div>
-          <div class="font-mono">Thanks for signing up !</div>
-
-          <div class="mt-6 text-2xl tracking-widest">
-            Please Verify Your Email Address
-          </div>
-          <div class="mt-4">
-            <i class="fas fa-envelope-open text-white text-4xl"></i>
-          </div>
-        </div>
-        <h2 class="text-2xl mt-4">Hello, [User's Name]</h2>
-        <p class="mt-2">Your One-Time Password (OTP) for verification is:</p>
-        <div
-          class="text-2xl font-bold bg-gray-50 p-4 text-center rounded-lg border border-dashed border-blue-500 text-blue-500 my-4"
-        >
-          123456
-        </div>
-        <p class="mt-4">
-          Please use this OTP to complete your verification. The OTP is valid
-          for the next 10 minutes.
-        </p>
-        <a
-          href="#"
-          class="inline-block mt-4 px-5 py-2.5 text-white bg-blue-600 rounded-md font-bold no-underline"
-        >
-          Verify Now
-        </a>
-      </div>
-      <div class="text-gray-500 text-sm text-center mt-5">
-        <p>
-          If you did not request this OTP, please
-          <a href="#" class="text-blue-600 no-underline">contact me</a>
-          immediately.
-        </p>
-        <p class="mt-2">Thank you,<br />Lofi Learn</p>
-      </div>
-    </div>
+  <body style="margin:0; padding:0; background-color:#fefae0; font-family:Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#fefae0">
+      <tr>
+        <td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color:#283618; border:2px solid #db8539;">
+            <tr>
+              <td align="center" style="padding:20px;">
+                <h1 style="color:#db8539; font-size:24px; margin:0;">Lofi Learn</h1>
+                <p style="color:#fefae0; font-size:16px;">Thanks for signing up!</p>
+                <p style="color:#db8539; font-size:18px; font-weight:bold;">Please Verify Your Email Address</p>
+                <p style="color:#fefae0; font-size:16px;">Hello, {{NAME}}</p>
+                <p style="color:#fefae0; font-size:16px;">Your One-Time Password (OTP) for verification is:</p>
+                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td align="center">
+                      <p style="background-color:#fefae0; border:2px dashed #db8539; color:#283618; font-size:24px; font-weight:bold; padding:12px 20px; display:inline-block; margin:10px 0;">
+                        {{OTP}}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+                <p style="color:#fefae0; font-size:16px;">Use this OTP to complete your verification. It's valid for 1 hour.</p>
+                <p style="color:#db8539; font-size:12px; margin-top:20px;">
+                  If you did not request this OTP, please <a href="#" style="color:#db8539; text-decoration:underline;">contact me</a> immediately.
+                </p>
+                <p style="color:#fefae0; font-size:12px;">Thank you,<br>Çağla Yağmur İçer</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

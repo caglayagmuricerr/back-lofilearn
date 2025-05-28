@@ -6,7 +6,8 @@ const emailLogSchema = new mongoose.Schema({
   type: String, // "INACTIVITY_WARNING" "EMAIL_VERIFICATION_OTP" "PASSWORD_RESET_OTP" etc.
   status: String, // "SENT", "FAILED"
   subject: String,
-  text: String,
+  html: String,
+  error: String,
   createdAt: { type: Date, default: Date.now },
 });
 
