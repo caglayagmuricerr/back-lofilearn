@@ -1,9 +1,10 @@
 name: Deploy Node.js Backend to VPS
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Run Jest Tests"]
+    types:
+      - completed
 
 jobs:
   deploy:
