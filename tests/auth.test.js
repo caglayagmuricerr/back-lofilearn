@@ -16,7 +16,11 @@ describe("Auth Routes - POST /api/auth/<route>", () => {
   let password = "Test12345";
 
   beforeAll(async () => {
-    await mongoose.connect(process.env.MONGODB_URI);
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error("MONGODB_URI is not defined");
+    }
+    await mongoose.connect(uri);
   });
 
   afterEach(async () => {
@@ -24,7 +28,7 @@ describe("Auth Routes - POST /api/auth/<route>", () => {
   });
 
   afterAll(async () => {
-    await mongoose.connection.close();
+    await mongoose.disconnect();
   });
 
   describe("Register", () => {
@@ -632,7 +636,7 @@ describe("Auth Routes - POST /api/auth/<route>", () => {
         isVerified: true,
         role: "student",
         resetPasswordOTP: "123456",
-        resetPasswordOTPExpires: Date.now() + 10 * 60 * 1000, 
+        resetPasswordOTPExpires: Date.now() + 10 * 60 * 1000,
       });
     });
 
@@ -711,7 +715,7 @@ describe("Auth Routes - POST /api/auth/<route>", () => {
       // temporarily override findOne to simulate a DB error
       const originalFindOne = User.findOne;
       User.findOne = () => {
-        throw new Error("DB error"); 
+        throw new Error("DB error");
       };
 
       const res = await request(app).post("/api/auth/reset-password").send({
