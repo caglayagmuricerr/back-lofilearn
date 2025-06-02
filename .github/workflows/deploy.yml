@@ -35,5 +35,5 @@ jobs:
             SENDER_EMAIL=${{ secrets.SENDER_EMAIL }}
             FRONTEND_URL=${{ secrets.FRONTEND_URL }}
             EOF
-            pm2 start server.js --name back-lofilearn || pm2 restart back-lofilearn
+            pm2 start npm --name back-lofilearn -- start || pm2 restart back-lofilearn
             pm2 save
