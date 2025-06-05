@@ -15,7 +15,7 @@
   "scripts": {
     "start": "node --env-file=.env server.js",
     "dev": "node --watch --trace-warnings --env-file=.env server.js",
-    "test": "env-cmd -f .env.test jest --json",
+    "test": "env-cmd -f .env.test jest",
     "test:auth": "env-cmd -f .env.test jest --testPathPattern=auth",
     "test:db": "env-cmd -f .env.test jest --testPathPattern=db",
     "test:utils": "env-cmd -f .env.test jest --testPathPattern=utils",
