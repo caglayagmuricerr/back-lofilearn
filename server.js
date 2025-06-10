@@ -1,10 +1,21 @@
+const http = require("http");
 const app = require("./app");
+const { Server } = require("socket.io");
+const socketio = require("./socketio");
 
-const PORT = process.env.PORT || 5000;
+const server = http.createServer(app);
 
-app.listen(PORT, () =>
-  console.log(
-    `\n━━━━━━━━━━━━━━⊱⋆⊰━━━━━━━━━━━━━━\n\n  Server running on port ${PORT}\n\n━━━━━━━━━━━━━━⊱⋆⊰━━━━━━━━━━━━━━\n`
-  )
-);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  },
+});
 
+socketio(io);
+
+const PORT = process.env.PORT;
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
