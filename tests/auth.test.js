@@ -62,7 +62,7 @@ describe("Auth Routes - POST /api/auth/<route>", () => {
         .send({ name: name, email: studentEmail, password });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty("success", false);
-      expect(res.body.message).toMatch(/already in use/i);
+      expect(res.body.message).toMatch(/already registered/i);
     });
 
     test.each([

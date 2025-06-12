@@ -9,6 +9,7 @@ const sendRes = require("../utils/sendRes");
 const transporter = require("../utils/sendMail");
 const logMail = require("../utils/logMail");
 const generateOTP = require("../utils/otp");
+const { profile } = require("console");
 
 /* 
   Authentication controller for handling user registration, login, logout, email verification, password reset, and password change.
@@ -29,6 +30,11 @@ exports.register = async (req, res) => {
 
   if (!name || !email || !password) {
     return sendRes(res, 400, false, "All fields are required.");
+  }
+
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    return sendRes(res, 400, false, "This email is already registered.");
   }
 
   if (email.endsWith("@ogr.btu.edu.tr")) {
@@ -58,13 +64,22 @@ exports.register = async (req, res) => {
     await user.save();
 
     const token = jwt.sign(
-      { _id: user._id, role: user.role, isVerified: user.isVerified },
+      {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        quizzes: user.quizzes,
+        profilePicture: user.profilePicture,
+        lastLogin: user.lastLogin,
+        isVerified: user.isVerified,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
     res.cookie("Authorization", "Bearer " + token, {
-      httpOnly: true,
+      //httpOnly: true,
       secure: process.env.NODE_ENV === "production", // HTTPS in production
       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict", // against CSRF
       maxAge: 1 * 24 * 60 * 60 * 1000, // 1 day
@@ -80,13 +95,13 @@ exports.register = async (req, res) => {
 
     console.log("Role sent in response:", user.role);
   } catch (error) {
-    if (error.cause.code === 11000) {
+    /* if (error.cause.code === 11000) { // DOESN'T WORK WITH BROWSER
       // mongoose duplicate key error
       // console.log("ERROR OBJECT:", error);
       // console.log("ERROR CODE:", error.code); // returns undefined... adding cause to all errors fixed this
       const field = Object.keys(error.cause.keyPattern)[0];
       return sendRes(res, 400, false, `This ${field} is already in use.`);
-    }
+    } */
     return sendRes(res, 500, false, error.message);
   }
 };
@@ -120,19 +135,20 @@ exports.login = async (req, res) => {
         403,
         false,
         "Please verify your email before logging in."
-      ); // Forbidden
+      ); // forbidden
     }
     user.lastLogin = Date.now();
     await user.save();
 
-    const token = jwt.sign(
-      { _id: user._id, role: user.role, isVerified: user.isVerified },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    const userForToken = user.toObject();
+    delete userForToken.password;
+
+    const token = jwt.sign(userForToken, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
 
     res.cookie("Authorization", "Bearer " + token, {
-      httpOnly: true,
+      //httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
       maxAge: 1 * 24 * 60 * 60 * 1000,
@@ -153,7 +169,7 @@ exports.logout = async (req, res) => {
     }
 
     res.clearCookie("Authorization", {
-      httpOnly: true,
+      //httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
     });
@@ -164,7 +180,10 @@ exports.logout = async (req, res) => {
 };
 
 exports.sendVerificationOTP = async (req, res) => {
-  const templatePath = path.join(__dirname, "../templates/verification_template.html");
+  const templatePath = path.join(
+    __dirname,
+    "../templates/verification_template.html"
+  );
   let htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
   try {

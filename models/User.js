@@ -27,6 +27,17 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "teacher", "student"],
       default: "student",
     },
+    quizzes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Quiz",
+      },
+    ],
+    profilePicture: {
+      type: String,
+      default:
+        "https://i0.wp.com/beachmeter.com/wp-content/uploads/2017/06/250x250px.png?ssl=1",
+    },
     lastLogin: { type: Date },
     isVerified: { type: Boolean, default: false },
     verificationOTP: { type: String },

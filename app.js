@@ -3,8 +3,11 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
 const connectDB = require("./db");
+
 const authRoutes = require("./routes/authRoutes");
 const suggestionRoutes = require("./routes/suggestionRoutes");
+const userRoutes = require("./routes/userRoutes");
+
 const { limiter } = require("./middleware/rateLimitMiddleware");
 
 require("./cronjobs/warnAndDeleteUser");
@@ -27,5 +30,6 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use("/api/auth", limiter, authRoutes);
 app.use("/api/suggestions", limiter, suggestionRoutes);
+app.use("/api/user", userRoutes);
 
 module.exports = app;
