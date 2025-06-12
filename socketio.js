@@ -1,90 +1,60 @@
 const jwt = require("jsonwebtoken");
 
-module.exports = function (io) {
+const lobbies = {};
+
+module.exports = (io) => {
+  // auth middleware for Socket.IO
   io.use((socket, next) => {
-    const token = socket.handshake.headers?.authorization?.split(" ")[1];
-    if (!token) {
-      return next(new Error("Authentication error: Token required"));
-    }
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.user = decoded;
+      const token =
+        socket.handshake.auth.token || socket.handshake.headers.authorization;
+
+      if (!token) {
+        return next(new Error("Authentication error: No token provided"));
+      }
+
+      const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
+
+      const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET);
+
+      socket.user = decoded; // attach user data to socket
       next();
-    } catch (err) {
+    } catch (error) {
       next(new Error("Authentication error: Invalid token"));
     }
   });
 
   io.on("connection", (socket) => {
-    console.log(`Socket ${socket.id} connected as user ${socket.user._id}`);
+    socket.on("join-lobby", ({ inviteCode }) => {
+      const name = socket.user.name;
+      console.log(`${name} is trying to join lobby: ${inviteCode}`);
+      socket.join(inviteCode);
+      socket.data.username = name;
 
-    // CHAT FUNCTIONALITY
-    socket.on("join-chat", () => {
-      socket.join("public-chat");
-      socket.to("public-chat").emit("user-joined", {
-        userId: socket.user._id,
-        username: socket.user.username,
-        role: socket.user.role,
+      if (!lobbies[inviteCode]) lobbies[inviteCode] = [];
+      lobbies[inviteCode].push(name);
+
+      // emit updated player list to the lobby
+      io.to(inviteCode).emit("lobby-update", {
+        players: lobbies[inviteCode],
+        message: `${name} joined the lobby.`,
       });
     });
 
-    socket.on("leave-chat", () => {
-      socket.leave("public-chat");
-      socket.to("public-chat").emit("user-left", {
-        userId: socket.user._id,
-        username: socket.user.username,
-      });
+    socket.on("disconnecting", () => {
+      for (const inviteCode of socket.rooms) {
+        if (lobbies[inviteCode]) {
+          lobbies[inviteCode] = lobbies[inviteCode].filter(
+            (n) => n !== socket.data.username
+          );
+          io.to(inviteCode).emit("lobby-update", {
+            players: lobbies[inviteCode],
+            message: `${socket.data.username} left the lobby.`,
+          });
+        }
+      }
     });
 
-    socket.on("send-message", (data) => {
-      const messageData = {
-        messageId: Date.now(),
-        userId: socket.user._id,
-        username: socket.user.username,
-        role: socket.user.role,
-        message: data.message,
-        timestamp: new Date().toISOString(),
-      };
-      io.to("public-chat").emit("new-message", messageData);
-    });
-
-    // QUIZ FUNCTIONALITY
-    socket.on("join-quiz", (data) => {
-      const quizRoom = `quiz-${data.quizId}`;
-      socket.join(quizRoom);
-      socket.to(quizRoom).emit("player-joined", {
-        userId: socket.user._id,
-        username: socket.user.username,
-      });
-    });
-
-    socket.on("leave-quiz", (data) => {
-      const quizRoom = `quiz-${data.quizId}`;
-      socket.leave(quizRoom);
-      socket.to(quizRoom).emit("player-left", {
-        userId: socket.user._id,
-        username: socket.user.username,
-      });
-    });
-
-    socket.on("submit-answer", (data) => {
-      const quizRoom = `quiz-${data.quizId}`;
-      // Handle quiz answer logic here
-      io.to(quizRoom).emit("answer-submitted", {
-        userId: socket.user._id,
-        questionId: data.questionId,
-        answer: data.answer,
-      });
-    });
-
-    socket.on("disconnect", () => {
-      console.log(`Socket ${socket.id} disconnected`);
-      // Auto-leave all rooms on disconnect
-    });
-
-    socket.on("error", (error) => {
-      console.error(`Socket ${socket.id} error:`, error);
-      socket.emit("error", { message: "An error occurred", error });
-    });
+    // TODO: Handle quiz start, question submission, score updates, etc.
   });
 };
