@@ -50,6 +50,16 @@ exports.register = async (req, res) => {
     );
   }
 
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return sendRes(
+      res,
+      400,
+      false,
+      "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number"
+    );
+  }
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
