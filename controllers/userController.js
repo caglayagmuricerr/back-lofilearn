@@ -7,11 +7,13 @@ const getUserInfo = (req, res) => {
     return sendRes(res, 401, false, "Not authenticated");
   }
   const userInfo = {
+    _id: user._id,
     name: user.name,
     email: user.email,
     role: user.role,
     profilePicture: user.profilePicture,
-    quizzes: user.quizzes,
+    quizzesToTake: user.quizzes,
+    quizzesCreated: user.quizzes,
     lastLogin: user.lastLogin,
     isVerified: user.isVerified,
   };

@@ -79,7 +79,6 @@ exports.register = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        quizzes: user.quizzes,
         profilePicture: user.profilePicture,
         lastLogin: user.lastLogin,
         isVerified: user.isVerified,

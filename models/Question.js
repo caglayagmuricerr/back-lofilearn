@@ -8,6 +8,7 @@ const questionSchema = new mongoose.Schema({
     required: true,
   },
   text: { type: String, required: true },
+  image: { type: String },
   options: [
     {
       text: { type: String },
