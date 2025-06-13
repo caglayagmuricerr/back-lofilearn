@@ -2,6 +2,25 @@ const jwt = require("jsonwebtoken");
 
 const lobbies = {};
 
+/* 
+lobbies holds players in different lobbies.
+ 
+const lobbies = {
+  "A63YHK": [player1, player2, player3],  
+  "G6KDS2": [player6]                     
+  "P3DCA9": [player4, player5],           
+} 
+
+player1 = {
+  name: "Alice",
+  role: "student"
+}
+player2 = {
+  name: "Bob",
+  role: "teacher"
+}
+*/
+
 module.exports = (io) => {
   // auth middleware for Socket.IO
   io.use((socket, next) => {
@@ -16,8 +35,8 @@ module.exports = (io) => {
       const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
 
       const decoded = jwt.verify(cleanToken, process.env.JWT_SECRET);
-
       socket.user = decoded; // attach user data to socket
+
       next();
     } catch (error) {
       next(new Error("Authentication error: Invalid token"));
@@ -28,30 +47,33 @@ module.exports = (io) => {
     const name = socket.user.name;
     const role = socket.user.role;
 
-    console.log("User connected:", name, role);
+    console.log("User connected:", name, "(", role, ")");
 
     socket.data.username = name;
     socket.data.role = role;
 
     socket.on("join-lobby", ({ inviteCode }) => {
-      console.log(`${name} is trying to join lobby: ${inviteCode}`);
+      //console.log(`${name} is trying to join lobby: ${inviteCode}`);
 
       socket.join(inviteCode);
       socket.data.inviteCode = inviteCode;
 
       if (!lobbies[inviteCode]) {
         lobbies[inviteCode] = [];
-        console.log(`Created new lobby: ${inviteCode}`);
+        //console.log(`Created new lobby: ${inviteCode}`);
       }
       lobbies[inviteCode] = lobbies[inviteCode].filter(
         (player) => player.name !== name
       );
 
       lobbies[inviteCode].push({ name, role });
-      console.log(`Lobby ${inviteCode} now has players:`, lobbies[inviteCode]);
+      //console.log(`Lobby ${inviteCode} now has players:`, lobbies[inviteCode]);
 
       // emit updated player list to the lobby
       io.to(inviteCode).emit("lobby-update", {
+        // Belirtilen inviteCode'a sahip lobiye "lobby-update" eventi gönderiliyor.
+        // Bu event, lobiye katılan oyuncuların güncel listesini ve
+        // katılım gerçekleşince gösterilecek mesajı iletiliyor.
         players: lobbies[inviteCode],
         message: `${name} joined the lobby.`,
       });
@@ -82,7 +104,7 @@ module.exports = (io) => {
     });
 
     socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.user?.name);
+      console.log("User disconnected:", socket.user.name);
     });
 
     // TODO: Handle quiz start, question submission, score updates, etc.

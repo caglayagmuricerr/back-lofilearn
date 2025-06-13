@@ -15,6 +15,7 @@ const questionSchema = new mongoose.Schema({
       isCorrect: { type: Boolean },
     },
   ],
+  timeLimit: { type: Number, default: 30 }, // 30 secs
   correctAnswer: { type: String },
   explanation: { type: String },
   createdAt: { type: Date, default: Date.now },
