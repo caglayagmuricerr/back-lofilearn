@@ -27,12 +27,6 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "teacher", "student"],
       default: "student",
     },
-    quizzesToTake: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Quiz",
-      },
-    ],
     profilePicture: {
       type: String,
       default:

@@ -5,6 +5,7 @@ const { requireAuth } = require("../middleware/authMiddleware");
 const upload = require("../middleware/upload");
 
 router.get("/", quizController.getQuizzesByCreator);
+router.get("/student/:userId", requireAuth, quizController.getStudentQuizzes);
 // /api/quizzes
 router.post("/", requireAuth, quizController.createQuiz);
 router.post("/byIds", quizController.getQuizzesByIds);
@@ -15,6 +16,10 @@ router.post(
   upload.single("image"),
   quizController.uploadImage
 );
-router.post("/invite-all", requireAuth, quizController.inviteAllStudents);
+router.post(
+  "/invite-all/:quizId",
+  requireAuth,
+  quizController.inviteAllStudents
+);
 
 module.exports = router;

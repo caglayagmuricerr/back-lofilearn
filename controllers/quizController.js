@@ -24,23 +24,26 @@ exports.getQuizzesByCreator = async (req, res) => {
   }
 };
 
-exports.getQuizzesByIds = async (req, res) => {
+exports.getStudentQuizzes = async (req, res) => {
   try {
-    const { ids } = req.body;
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "ids array is required." });
-    }
+    const { userId } = req.params;
 
-    const objectIds = ids.map((id) => new mongoose.Types.ObjectId(String(id)));
-    const quizzes = await Quiz.find({ _id: { $in: objectIds } });
-    console.log("Quizzes found:", quizzes);
-    res.status(200).json({ success: true, data: quizzes });
+    const quizzes = await Quiz.find({
+      "participants.user": userId,
+    })
+      .populate("createdBy", "name")
+      .select("title description inviteCode participants createdAt createdBy");
+
+    res.status(200).json({
+      success: true,
+      data: quizzes,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error.", error: error.message });
+    console.error("Error fetching student quizzes:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 
@@ -147,25 +150,81 @@ exports.getMyQuizzes = async (req, res) => {
 
 exports.inviteAllStudents = async (req, res) => {
   try {
-    const { quizId } = req.body;
-    if (!quizId) {
-      return res
-        .status(400)
-        .json({ success: false, message: "quizId is required." });
+    const { quizId } = req.params;
+
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
     }
 
-    const students = await User.find({ role: "student" });
+    if (
+      quiz.createdBy.toString() !== req.user.id &&
+      req.user.role !== "teacher"
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to invite students to this quiz" });
+    }
 
-    await Promise.all(
-      students.map((student) =>
-        User.updateOne(
-          { _id: student._id, quizzesToTake: { $ne: quizId } },
-          { $push: { quizzesToTake: quizId } }
-        )
-      )
+    const students = await User.find({ role: "student" }).select("_id");
+
+    if (students.length === 0) {
+      return res.status(404).json({ message: "No students found" });
+    }
+
+    // get existing participant user IDs to avoid duplicates
+    const existingParticipantIds = quiz.participants.map((p) =>
+      p.user.toString()
     );
 
-    res.status(200).json({ success: true, message: "All students invited." });
+    // filter out students who are already participants
+    const newStudents = students.filter(
+      (student) => !existingParticipantIds.includes(student._id.toString())
+    );
+
+    if (newStudents.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "All students are already invited to this quiz" });
+    }
+
+    // create participant objects for new students
+    const newParticipants = newStudents.map((student) => ({
+      user: student._id,
+      status: "invited",
+    }));
+
+    // add new participants to the quiz
+    await Quiz.findByIdAndUpdate(quizId, {
+      $push: {
+        participants: { $each: newParticipants },
+      },
+    });
+
+    res.status(200).json({
+      message: `Successfully invited ${newParticipants.length} students to the quiz`,
+      invitedCount: newParticipants.length,
+      totalParticipants: quiz.participants.length + newParticipants.length,
+    });
+  } catch (error) {
+    console.error("Error inviting all students:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.getQuizzesByIds = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "ids array is required." });
+    }
+
+    const objectIds = ids.map((id) => new mongoose.Types.ObjectId(String(id)));
+    const quizzes = await Quiz.find({ _id: { $in: objectIds } });
+    console.log("Quizzes found:", quizzes);
+    res.status(200).json({ success: true, data: quizzes });
   } catch (error) {
     res
       .status(500)
