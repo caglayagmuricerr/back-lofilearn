@@ -87,6 +87,7 @@ exports.createQuiz = async (req, res) => {
         correctAnswer: questionData.correctAnswer,
         explanation: questionData.explanation,
         image: questionData.image || null, // image URL
+        timeLimit: questionData.timeLimit,
       });
       return question.save();
     });
@@ -104,7 +105,6 @@ exports.createQuiz = async (req, res) => {
         description: savedQuiz.description,
         inviteCode: savedQuiz.inviteCode,
         createdAt: savedQuiz.createdAt,
-        questionCount: savedQuestions.length,
       },
     });
   } catch (error) {
