@@ -118,11 +118,12 @@ exports.uploadImage = async (req, res) => {
       return res.status(400).json({ message: "No image file provided" });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    const fileName = req.file.filename;
+    const imageUrl = `/uploads/${fileName}`;
 
     res.status(200).json({
       message: "Image uploaded successfully",
-      imageUrl: imageUrl,
+      imageUrl,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error.", error: error.message });
