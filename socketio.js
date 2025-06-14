@@ -218,6 +218,7 @@ module.exports = (io) => {
         question: currentQuestion.text,
         options: currentQuestion.options.map((opt) => opt.text),
         timeLimit: currentQuestion.timeLimit,
+        image: currentQuestion.image,
       },
       questionIndex: quiz.currentQuestionIndex,
       timeLimit: currentQuestion.timeLimit,
