@@ -12,11 +12,9 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
-    );
+    const randomNum = Math.floor(10000000 + Math.random() * 90000000); // random 8-digit number
+    const ext = path.extname(file.originalname);
+    cb(null, `image-${randomNum}${ext}`);
   },
 });
 
