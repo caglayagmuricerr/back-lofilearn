@@ -152,6 +152,7 @@ module.exports = (io) => {
 
         io.to(inviteCode).emit("quiz-started", {
           totalQuestions: questions.length,
+          backgroundMusic: quiz.backgroundMusic,
         });
 
         startNextQuestion(inviteCode);
@@ -186,8 +187,8 @@ module.exports = (io) => {
         (option) => option.isCorrect
       );
       if (answer === correctAnswerIndex) {
-        const timeBonus = Math.floor(timeRemaining / 2);
-        quiz.scores[username] = (quiz.scores[username] || 0) + 100 + timeBonus;
+        const points = 10 + timeRemaining;
+        quiz.scores[username] = (quiz.scores[username] || 0) + points;
       }
 
       // checking if all students have answered

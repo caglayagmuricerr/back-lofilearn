@@ -22,6 +22,10 @@ const quizSchema = new mongoose.Schema({
   ],
   questions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
   createdAt: { type: Date, default: Date.now },
+  backgroundMusic: {
+    type: String,
+    default: "/uploads/lofi-background-music.mp3",
+  },
 });
 
 module.exports = mongoose.model("Quiz", quizSchema);
